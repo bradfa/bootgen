@@ -113,6 +113,10 @@ void Options::ProcessVerifyKDF()
 void Options::ProcessReadImage()
 {
     std::string readFile = GetReadImageFile();
+    if (GetVerifyEncOption() && readFile == "")
+    {
+        LOG_ERROR("'-verify_enc' requires a boot image. Use '-verify_enc <bootimage> <keyfile>' or '-verify <bootimage> -verify_enc <keyfile>'.");
+    }
     if (readFile != "")
     {
         ReadImage* readImage = NULL;
@@ -143,13 +147,24 @@ void Options::ProcessReadImage()
             LOG_ERROR("'-arch' option not specified to read PDI");
         }
  
-       if (GetVerifyImageOption())
+       if (GetVerifyImageOption() || GetVerifyEncOption())
         {
             if (archType == Arch::ZYNQ)
             {
-                LOG_ERROR("'-verify' option is not supported with the mentioned '-arch'.");
+                LOG_ERROR("'-verify'/'-verify_enc' option supported only for ZynqMP architecture, '-arch zynqmp'.");
             }
-            readImage->VerifyAuthentication(GetVerifyImageOption());
+            if (GetVerifyEncOption() && archType != Arch::ZYNQMP)
+            {
+                LOG_ERROR("'-verify_enc' option supported only for ZynqMP architecture, '-arch zynqmp'.");
+            }
+            if (GetVerifyImageOption())
+            {
+                readImage->VerifyAuthentication(GetVerifyImageOption());
+            }
+            if (GetVerifyEncOption())
+            {
+                readImage->VerifyEncryption(GetVerifyEncNkyFile());
+            }
         }
         else
         {
@@ -437,6 +452,18 @@ void Options::SetVerifyImageOption(bool)
 }
 
 /******************************************************************************/
+void Options::SetVerifyEncOption(bool)
+{
+    verifyEncryption = true;
+}
+
+/******************************************************************************/
+void Options::SetVerifyEncNkyFile(std::string file)
+{
+    verifyEncNkyFile = file;
+}
+
+/******************************************************************************/
 void Options::SetReadImageOption(ReadImageOption::Type type)
 {
     readImageOption = type;
@@ -513,6 +540,18 @@ ReadImageOption::Type Options::GetReadImageOption(void)
 bool Options::GetVerifyImageOption()
 {
     return verifyImage;
+}
+
+/******************************************************************************/
+bool Options::GetVerifyEncOption()
+{
+    return verifyEncryption;
+}
+
+/******************************************************************************/
+std::string Options::GetVerifyEncNkyFile()
+{
+    return verifyEncNkyFile;
 }
 
 /******************************************************************************/

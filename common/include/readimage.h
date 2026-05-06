@@ -92,6 +92,7 @@ public:
     virtual void DisplayBootVectors(void) {};
 
     virtual void VerifyAuthentication(bool) {};
+    virtual void VerifyEncryption(std::string) {};
     void Separator();
     bool versalNetSeries;
     bool dl9Series;  

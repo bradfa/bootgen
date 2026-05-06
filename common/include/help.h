@@ -809,6 +809,44 @@ verify_kdf
 -------------+----------------------------------------------------------------+\n"
 
 /******************************************************************************
+ verify_enc
+******************************************************************************/
+#define VERIFYENCHELP "\
+-------------+----------------------------------------------------------------+\n\
+ OPTION      | verify_enc                                                     |\n\
+-------------+----------------------------------------------------------------+\n\
+ SUPPORTED   | zynqmp                                                         |\n\
+-------------+----------------------------------------------------------------+\n\
+ DESCRIPTION | Verifies AES-256-GCM encryption of all encrypted partitions    |\n\
+             | in a boot image by validating GCM authentication tags.         |\n\
+-------------+----------------------------------------------------------------+\n\
+ SYNOPSIS    | -verify_enc <bootimage> <keyfile>                              |\n\
+             | -verify_enc <keyfile>  (combined with -verify)                 |\n\
+-------------+----------------------------------------------------------------+\n\
+ USAGE       | bootgen -arch zynqmp -verify_enc boot.bin key.nky              |\n\
+             | bootgen -arch zynqmp -verify boot.bin -verify_enc key.nky      |\n\
+-------------+----------------------------------------------------------------+\n\
+ EXPLANATION | The .nky file must contain three fields:                       |\n\
+             |   Device <device_name>;                                        |\n\
+             |   Key 0  <64-hex-char AES-256 red key>;                        |\n\
+             |   IV 0   <24-hex-char IV>;                                     |\n\
+             |                                                                |\n\
+             | Only Key 0 is used for verification. The Device value and IV 0 |\n\
+             | must be present to satisfy the .nky file parser, but their     |\n\
+             | values are not used. The IV is read directly from the boot     |\n\
+             | header (offset 0xA0) of the boot image itself.                 |\n\
+             |                                                                |\n\
+             | Verification works by decrypting the AES-GCM secure header of  |\n\
+             | each partition using Key 0. The GCM authentication tag is      |\n\
+             | verified cryptographically. Subsequent block keys and IVs are  |\n\
+             | recovered from the decrypted chain -- no plaintext knowledge   |\n\
+             | is required.                                                   |\n\
+             |                                                                |\n\
+             | Black and grey key images are supported by supplying the       |\n\
+             | unwrapped red key value as Key 0.                              |\n\
+-------------+----------------------------------------------------------------+\n"
+
+/******************************************************************************
  w
 ******************************************************************************/
 #define WHELP "\

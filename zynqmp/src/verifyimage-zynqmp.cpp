@@ -23,6 +23,9 @@
 #include "readimage-zynqmp.h"
 #include "authkeys.h"
 #include "Keccak-compact.h"
+#include "encryption-zynqmp.h"
+#include "encryptutils.h"
+#include "systemutils.h"
 #define BITSTREAM_AUTH_CHUNK_SIZE  0x800000 //8MB = 8*1024*1024
 
 
@@ -387,3 +390,158 @@ void ZynqMpReadImage::VerifyPartitionSignature(void)
     Separator();
 }
 
+/*******************************************************************************/
+void ZynqMpReadImage::VerifyEncryption(std::string nkyFile)
+{
+    ReadHeaderTableDetails();
+
+    ZynqMpEncryptionContext encCtx;
+    encCtx.ReadEncryptionKeyFile(nkyFile);
+
+    uint8_t aesKey0[AES_GCM_KEY_SZ];
+    memcpy_be(aesKey0, encCtx.GetAesKey(), AES_GCM_KEY_SZ);
+
+    /* IV 0 is stored in the boot header at offset 0xA0 (secureHdrIv).
+       bH is populated by fread so secureHdrIv holds raw file bytes; use memcpy. */
+    uint8_t baseIv[AES_GCM_IV_SZ];
+    memcpy(baseIv, bH->secureHdrIv, AES_GCM_IV_SZ);
+
+    FILE *binFile = fopen(binFilename.c_str(), "rb");
+    if (!binFile)
+    {
+        LOG_ERROR("Cannot read file %s", binFilename.c_str());
+    }
+
+    AesGcmEncryptionContext aesGcm;
+    bool allVerified = true;
+    int partIdx = 0;
+
+    for (std::list<ZynqMpPartitionHeaderTableStructure*>::iterator it = pHTs.begin(); it != pHTs.end(); it++, partIdx++)
+    {
+        ZynqMpPartitionHeaderTableStructure* pHT = *it;
+
+        if (!((pHT->partitionAttributes >> PH_ENCRYPT_SHIFT_ZYNQMP) & PH_ENCRYPT_MASK_ZYNQMP))
+        {
+            continue;
+        }
+
+        Separator();
+        LOG_MSG("Verifying encryption of partition %d", partIdx);
+
+        /* Per-partition effective IV: base IV with last byte incremented by partition index.
+           uint8_t addition wraps at 256 with no carry, matching the same logic in
+           ZynqMpEncryptionContext::ChunkifyAndEncrypt. */
+        uint8_t effectiveIv[AES_GCM_IV_SZ];
+        memcpy(effectiveIv, baseIv, AES_GCM_IV_SZ);
+        effectiveIv[AES_GCM_IV_SZ - 1] += (uint8_t)partIdx;
+
+        uint8_t currentKey[AES_GCM_KEY_SZ];
+        uint8_t currentIv[AES_GCM_IV_SZ];
+        memcpy(currentKey, aesKey0, AES_GCM_KEY_SZ);
+        memcpy(currentIv, effectiveIv, AES_GCM_IV_SZ);
+
+        uint32_t partOffset = pHT->partitionWordOffset * NUM_BYTES_PER_WORD;
+        uint32_t partLength = pHT->encryptedPartitionLength * NUM_BYTES_PER_WORD;
+
+        uint8_t* encData = new uint8_t[partLength];
+        fseek(binFile, partOffset, SEEK_SET);
+        size_t bytesRead = fread(encData, 1, partLength, binFile);
+        if (bytesRead != partLength)
+        {
+            LOG_ERROR("Error reading partition %d data from %s", partIdx, binFilename.c_str());
+        }
+
+        uint32_t offset = 0;
+        bool partVerified = true;
+        uint32_t nextBlkWords = 0;
+
+        /* Decrypt the secure header (encrypted with Key 0 / effective IV).
+           Plaintext = [Key_next(32) | IV_next(12) | next_block_word_size(4)]. */
+        uint8_t secHdrPt[SECURE_HDR_SZ];
+        int ptLen = SECURE_HDR_SZ;
+        int ret = aesGcm.AesGcm256Decrypt(secHdrPt, ptLen,
+            currentKey, currentIv, NULL, 0,
+            encData + offset, SECURE_HDR_SZ,
+            encData + offset + SECURE_HDR_SZ);
+        if (ret <= 0)
+        {
+            LOG_MSG("    Secure header GCM tag verification FAILED (wrong key or corrupted image)");
+            partVerified = false;
+        }
+        else
+        {
+            LOG_MSG("    Secure header GCM tag verified");
+            /* The bootloader partition stores zeros in the key field of the secure header
+               as a sentinel meaning block 0 uses the same key as the secure header itself.
+               Non-bootloader partitions store the actual next key here. */
+            bool keyIsZero = true;
+            for (int i = 0; i < AES_GCM_KEY_SZ; i++)
+            {
+                if (secHdrPt[i] != 0) { keyIsZero = false; break; }
+            }
+            if (!keyIsZero)
+            {
+                memcpy(currentKey, secHdrPt, AES_GCM_KEY_SZ);
+            }
+            memcpy(currentIv, secHdrPt + AES_GCM_KEY_SZ, AES_GCM_IV_SZ);
+            nextBlkWords = ReadLittleEndian32(secHdrPt + AES_GCM_KEY_SZ + AES_GCM_IV_SZ);
+        }
+        offset += SECURE_HDR_SZ + AES_GCM_TAG_SZ;
+
+        /* Walk data blocks. Each block's plaintext tail = [Key_next(32) | IV_next(12) | next_word_size(4)],
+           which provides the key/IV for the following block. */
+        int blockIdx = 0;
+        while (partVerified && nextBlkWords > 0)
+        {
+            uint32_t currBlkSize = nextBlkWords * NUM_BYTES_PER_WORD;
+            uint32_t ctLen = currBlkSize + SECURE_HDR_SZ;
+
+            uint8_t* blockPt = new uint8_t[ctLen];
+            ptLen = ctLen;
+            ret = aesGcm.AesGcm256Decrypt(blockPt, ptLen,
+                currentKey, currentIv, NULL, 0,
+                encData + offset, ctLen,
+                encData + offset + ctLen);
+            if (ret <= 0)
+            {
+                LOG_MSG("    Block %d GCM tag verification FAILED", blockIdx);
+                partVerified = false;
+                delete[] blockPt;
+                break;
+            }
+            LOG_MSG("    Block %d GCM tag verified", blockIdx);
+
+            memcpy(currentKey, blockPt + currBlkSize, AES_GCM_KEY_SZ);
+            memcpy(currentIv, blockPt + currBlkSize + AES_GCM_KEY_SZ, AES_GCM_IV_SZ);
+            nextBlkWords = ReadLittleEndian32(blockPt + currBlkSize + AES_GCM_KEY_SZ + AES_GCM_IV_SZ);
+
+            delete[] blockPt;
+            offset += ctLen + AES_GCM_TAG_SZ;
+            blockIdx++;
+        }
+
+        delete[] encData;
+
+        if (partVerified)
+        {
+            LOG_MSG("Encryption verified on partition %d", partIdx);
+        }
+        else
+        {
+            LOG_MSG("Encryption verification FAILED on partition %d", partIdx);
+            allVerified = false;
+        }
+    }
+
+    fclose(binFile);
+    Separator();
+
+    if (allVerified)
+    {
+        LOG_MSG("Encryption is verified on bootimage %s", binFilename.c_str());
+    }
+    else
+    {
+        LOG_ERROR("Encryption verification failed on bootimage %s", binFilename.c_str());
+    }
+}

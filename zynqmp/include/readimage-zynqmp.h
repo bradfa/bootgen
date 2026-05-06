@@ -73,6 +73,7 @@ public:
     void DumpPartitions(uint8_t* buffer, uint32_t length, std::string name);
 
     void VerifyAuthentication(bool);
+    void VerifyEncryption(std::string nkyFile);
     void VerifyHeaderTableSignature();
     void VerifySPKSignature(AuthCertificate4096Structure * auth_cert);
     void VerifyPartitionSignature(void);

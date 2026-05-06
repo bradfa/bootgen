@@ -144,6 +144,7 @@
 
 -enable_auth_opt            return tok::_AUTH_OPTIMIZATION;
 \-verify_kdf                return tok::_VERIFYKDF;
+\-verify_enc                return tok::_VERIFYENC;
 \-verify                    return tok::_VERIFY;
 \-encryption_dump           return tok::_ZYNQMPENCRDUMP;
 \-noauthblocks              return tok::_NOAUTHBLOCKS;
@@ -177,6 +178,7 @@ nonbooting                  return tok::HNONBOOTING;
 encryption_dump             return tok::HENCRDUMP;
 verify                      return tok::HVERIFY;
 verify_kdf                  return tok::HVERIFYKDF;
+verify_enc                  return tok::HVERIFYENC;
 securedebugimage            return tok::HSECUREDEBUG;
 authenticatedjtag           return tok::HSECUREDEBUG;
 read                        return tok::HREAD;

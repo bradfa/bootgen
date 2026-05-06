@@ -588,7 +588,7 @@ void AesGcmEncryptionContext::AesGcm256Encrypt(unsigned char* gcm_pt, int pt_len
 }
 
 /******************************************************************************/
-void AesGcmEncryptionContext::AesGcm256Decrypt(unsigned char* gcm_pt, int& pt_len, unsigned char* gcm_key,
+int AesGcmEncryptionContext::AesGcm256Decrypt(unsigned char* gcm_pt, int& pt_len, unsigned char* gcm_key,
     unsigned char* gcm_iv, unsigned char* gcm_aad, int aad_len,
     unsigned char* gcm_ct, int ct_len, unsigned char* gcm_tag)
 {
@@ -624,10 +624,11 @@ void AesGcmEncryptionContext::AesGcm256Decrypt(unsigned char* gcm_pt, int& pt_le
     EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, 16, gcm_tag);
 #endif
 
-    /* Finalise: GCM */
-    (void)EVP_DecryptFinal_ex(ctx, gcm_pt + outlen, &tmplen);
+    /* Finalise: GCM -- returns positive on success, negative if tag mismatch */
+    int ret = EVP_DecryptFinal_ex(ctx, gcm_pt + outlen, &tmplen);
 
     EVP_CIPHER_CTX_free(ctx);
 
     pt_len = outlen + tmplen;
+    return ret;
 }

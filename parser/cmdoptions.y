@@ -80,7 +80,7 @@ void ShowCommonHelp(int,bool);
 %token _ENCRYPT BBRAM EFUSE _P_TOK
 %token _INTERFACE SMAPx8 SMAPx16 SMAPx32 SPI BPIx8 BPIx16
 %token _READ READ_BH READ_IHT READ_IH READ_PHT READ_AC
-%token _VERIFY _VERIFYKDF _AUTH_OPTIMIZATION
+%token _VERIFY _VERIFYKDF _VERIFYENC _AUTH_OPTIMIZATION
 %token _ZYNQMPENCRDUMP
 %token <number> HEXVALUE
 %token <cstring> IDENTIFIER FILENAME QFILENAME HEXSTRING
@@ -90,7 +90,7 @@ void ShowCommonHelp(int,bool);
 
 %token HBIFHELP HARCH HIMAGE HFILL HO HP HW HEFUSEPPKBITS HGENHASHES HLEGACY HPADHDR H_SPKSIGN HAUTHOPT
 %token HPACKAGE HENCRYPT HGENKEYS HDQSPI HLOG HZYNQMPES1 HPROCESSBIT HNONBOOTING HENCRDUMP HPOSTPROCESS
-%token HVERIFY HSECUREDEBUG HREAD HVERIFYKDF HDUMP HDUMPDIR HOVLCDO HOUTTYPE
+%token HVERIFY HSECUREDEBUG HREAD HVERIFYKDF HVERIFYENC HDUMP HDUMPDIR HOVLCDO HOUTTYPE
 
 %token H_BIF_INIT H_BIF_UDFBH H_BIF_AES H_BIF_PPK H_BIF_PSK H_BIF_SPK H_BIF_SSK H_BIF_SPKSIGN H_BIF_HIVEC
 %token H_BIF_HDRSIGN H_BIF_BOOTIMAGE H_BIF_BL H_BIF_PID H_BIF_ENCR H_BIF_AUTH H_BIF_CHKSM H_BIF_ELYHNDOFF H_BIF_BHSIGN H_BIF_TCMBOOT H_BIF_OPTIONALDATA 
@@ -143,6 +143,7 @@ option          : _IMAGE filename                   { options.SetBifFilename($2)
                 | _AUTHJTAG authJtagOptions
                 | _READ readImageOptions
                 | _VERIFY verifyImageOptions
+                | _VERIFYENC verifyEncOptions
                 | _DUMP dumpOptions
                 | _DUMP_DIR filename                { options.SetDumpDirectory($2); }
                 | _VERIFYKDF filename               { options.SetKDFTestVectorFile($2); }
@@ -197,6 +198,7 @@ helpoption      : /* empty */                       { ShowHelp(); exit(0); }
                 | HENCRDUMP                         { ShowCmdHelp(CO::BisonParser::token::HENCRDUMP); exit(0); }
                 | HVERIFY                           { ShowCmdHelp(CO::BisonParser::token::HVERIFY); exit(0); }
                 | HVERIFYKDF                        { ShowCmdHelp(CO::BisonParser::token::HVERIFYKDF); exit(0); }
+                | HVERIFYENC                        { ShowCmdHelp(CO::BisonParser::token::HVERIFYENC); exit(0); }
                 | HREAD                             { ShowCmdHelp(CO::BisonParser::token::HREAD); exit(0); }
                 | HSECUREDEBUG                      { ShowCmdHelp(CO::BisonParser::token::HSECUREDEBUG); exit(0); }
                 | HDUMP                             { ShowCmdHelp(CO::BisonParser::token::HDUMP); exit(0); }
@@ -365,6 +367,12 @@ authJtagType    : ECDSA                             { options.SetSecureDebugAuth
 verifyImageOptions: filename                        { options.SetReadImageFile($1);
                                                       options.SetVerifyImageOption(true); }
 
+verifyEncOptions: filename filename                 { options.SetReadImageFile($1);
+                                                      options.SetVerifyEncNkyFile($2);
+                                                      options.SetVerifyEncOption(true); }
+               | filename                           { options.SetVerifyEncNkyFile($1);
+                                                      options.SetVerifyEncOption(true); }
+
 readImageOptions: filename                          { options.SetReadImageFile($1);
                                                       options.SetReadImageOption(ReadImageOption::ALL); }
                 | filename readType                 { options.SetReadImageFile($1); }
@@ -528,6 +536,10 @@ void ShowCmdHelp(int a)
     
     case CO::BisonParser::token::HVERIFYKDF:
         std::cout << VERIFYKDFHELP << std::endl;
+        break;
+
+    case CO::BisonParser::token::HVERIFYENC:
+        std::cout << VERIFYENCHELP << std::endl;
         break;
 
     case CO::BisonParser::token::HREAD:

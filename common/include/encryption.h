@@ -205,7 +205,7 @@ public:
 
     void AesGcm256Encrypt(unsigned char* gcm_pt, int pt_len, unsigned char* gcm_key, unsigned char* gcm_iv, unsigned char* gcm_aad, int aad_len,
         unsigned char* gcm_ct, int& ct_len, unsigned char* gcm_tag);
-    void AesGcm256Decrypt(unsigned char* gcm_pt, int& pt_len, unsigned char* gcm_key, unsigned char* gcm_iv, unsigned char* gcm_aad, int aad_len,
+    int AesGcm256Decrypt(unsigned char* gcm_pt, int& pt_len, unsigned char* gcm_key, unsigned char* gcm_iv, unsigned char* gcm_aad, int aad_len,
         unsigned char* gcm_ct, int ct_len, unsigned char* gcm_tag);
 };
 #endif

@@ -69,6 +69,7 @@
  split             - Split partitions to diff files                           |\n\
  spksignature      - Generate SPK signature file                              |\n\
  verify            - Verify BootImage authentication                          |\n\
+ verify_enc        - Verify AES-256-GCM encryption of a boot image            |\n\
  verify_kdf        - Verify AES key generation                                |\n\
  w                 - Overwrite mode                                           |\n\
  zynqmpes1         - Generate boot image for ZynqMP ES1                       |\n\

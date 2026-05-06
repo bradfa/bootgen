@@ -105,6 +105,11 @@ void ZynqMpReadImage::ReadBinaryFile(DumpOption::Type dump, std::string path)
 /*******************************************************************************/
 void ZynqMpReadImage::ReadHeaderTableDetails()
 {
+    if (bH != NULL)
+    {
+        return;
+    }
+
     size_t result;
     uint64_t offset = 0;
     uint32_t index = 0;

@@ -111,6 +111,8 @@ public:
         , readImageOption(ReadImageOption::NONE)
         , readImageFile("")
         , verifyImage(false)
+        , verifyEncryption(false)
+        , verifyEncNkyFile("")
         , bifOptions(NULL)
         , secHdrIv(NULL)
         , secHdrIvPmcData(NULL)
@@ -190,6 +192,8 @@ public:
     void SetDumpOption(DumpOption::Type);
     void SetDumpDirectory(std::string);
     void SetVerifyImageOption(bool);
+    void SetVerifyEncOption(bool);
+    void SetVerifyEncNkyFile(std::string);
     void SetReadImageOption(ReadImageOption::Type);
     void SetReadImageFile(std::string);
     void SetSecureDebugAuthType(Authentication::Type type);
@@ -241,6 +245,8 @@ public:
     std::string GetReadImageFile(void);
     ReadImageOption::Type GetReadImageOption(void);
     bool GetVerifyImageOption();
+    bool GetVerifyEncOption();
+    std::string GetVerifyEncNkyFile();
     DumpOption::Type GetDumpOption(void);
     std::string GetDumpDirectory(void);
     Authentication::Type GetSecureDebugAuthType(void);
@@ -278,6 +284,8 @@ public:
     std::string readImageFile;
     ReadImageOption::Type readImageOption;
     bool verifyImage;
+    bool verifyEncryption;
+    std::string verifyEncNkyFile;
     DumpOption::Type dumpOption;
     std::string dumpPath;
     bool overwriteMode;
