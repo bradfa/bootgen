@@ -100,6 +100,11 @@ void ZynqMpReadImage::ReadBinaryFile(DumpOption::Type dump, std::string path)
     {
         LOG_ERROR("The option '-read/-dump' is not supported on mcs format file : %s", binFilename.c_str());
     }
+    if (dumpType == DumpOption::AC_KEYS)
+    {
+        DumpACKeysAsPem();
+        return;
+    }
     ReadPartitions();
 }
 /*******************************************************************************/
@@ -353,6 +358,60 @@ void ZynqMpReadImage::DumpPartitions(uint8_t* buffer, uint32_t length, std::stri
         LOG_INFO("%s generated successfully", StringUtils::BaseName(fName).c_str());
     }
     return;
+}
+
+/*******************************************************************************/
+void ZynqMpReadImage::DumpACKeysAsPem()
+{
+    uint8_t* ac = NULL;
+    for (std::list<uint8_t*>::iterator it = aCs.begin(); it != aCs.end(); it++)
+    {
+        if (*it != NULL)
+        {
+            ac = *it;
+            break;
+        }
+    }
+    if (ac == NULL)
+    {
+        LOG_ERROR("No authentication certificate found in %s", binFilename.c_str());
+        return;
+    }
+
+    AuthCertificate4096Structure* cert = (AuthCertificate4096Structure*)ac;
+    std::string outDir = (dumpPath != "") ? dumpPath : ".";
+
+    struct { const char* name; ACKey4096* key; } keys[] = {
+        { "ppk", &cert->acPpk },
+        { "spk", &cert->acSpk },
+    };
+
+    for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); i++)
+    {
+        /* N[] and E[] in the auth cert are stored big-endian; BN_bin2bn expects big-endian */
+        BIGNUM* bn_n = BN_bin2bn(keys[i].key->N, RSA_4096_KEY_LENGTH, NULL);
+        BIGNUM* bn_e = BN_bin2bn(keys[i].key->E, sizeof(uint32_t), NULL);
+        RSA* rsa = RSA_new();
+#if OPENSSL_VERSION_NUMBER > 0x10100000L
+        RSA_set0_key(rsa, bn_n, bn_e, NULL);
+#else
+        rsa->n = bn_n;
+        rsa->e = bn_e;
+#endif
+        std::string fName = outDir + "/" + keys[i].name + ".pem";
+        FILE* f = fopen(fName.c_str(), "wb");
+        if (f != NULL)
+        {
+            PEM_write_RSA_PUBKEY(f, rsa);
+            fclose(f);
+            LOG_INFO("%s generated successfully", StringUtils::BaseName(fName).c_str());
+        }
+        else
+        {
+            LOG_ERROR("Failed to open %s for writing", fName.c_str());
+        }
+        RSA_free(rsa);
+    }
 }
 
 /*******************************************************************************/

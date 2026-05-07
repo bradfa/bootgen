@@ -70,7 +70,7 @@ void ShowCommonHelp(int,bool);
 %token _IMAGE _FILL _O_TOK I _H _DEBUG_TOK _LEGACY _NONBOOTING _PACKAGENAME _BIF_HELP
 %token _LOG ERROR WARNING INFO DEBUG TRACE
 %token _SPLIT _PROCESS_BITSTREAM MCS BIN _OUT_TYPE
-%token _DUMP DUMP_PLM DUMP_PMC_CDO DUMP_BOOT_FILES _DUMP_DIR DUMP_SLAVE_PDIS DUMP_PUF_PDI
+%token _DUMP DUMP_PLM DUMP_PMC_CDO DUMP_BOOT_FILES _DUMP_DIR DUMP_SLAVE_PDIS DUMP_PUF_PDI DUMP_AC_KEYS
 %token _ARCH ZYNQ ZYNQMP VERSAL _R FPGA VERSALNET TELLURIDE VERSAL_2VE_2VM LASSEN LASSEN_DL9 SPARTANUP
 %token _DUAL_QSPI_MODE _DUAL_OSPI_MODE PARALLEL STACKED
 %token _W ON OFF
@@ -400,6 +400,8 @@ dumpOptions     : READ_BH                           { options.SetDumpOption(Dump
                                                       options.SetDumpOption(DumpOption::BOOT_FILES); }
                 | DUMP_SLAVE_PDIS                   { options.SetDumpOption(DumpOption::SLAVE_PDIS); }
                 | DUMP_PUF_PDI                      { options.SetDumpOption(DumpOption::PUF_PDI); }
+                | filename DUMP_AC_KEYS             { options.SetReadImageFile($1);
+                                                      options.SetDumpOption(DumpOption::AC_KEYS); }
                 ;
 
 encrDumpOptions : /* empty */                       { options.SetEncryptionDump(true,"aes_log.txt"); }

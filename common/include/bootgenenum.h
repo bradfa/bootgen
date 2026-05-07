@@ -511,7 +511,8 @@ struct DumpOption
         BOOT_FILES,
         PARTITIONS,
         SLAVE_PDIS,
-        PUF_PDI
+        PUF_PDI,
+        AC_KEYS
     } Type;
 };
 

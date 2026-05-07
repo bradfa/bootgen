@@ -178,7 +178,7 @@ dual_qspi_mode
 -------------+----------------------------------------------------------------+\n\
  OPTION      | dump                                                           |\n\
 -------------+----------------------------------------------------------------+\n\
- SUPPORTED   | versal                                                         |\n\
+ SUPPORTED   | versal, zynqmp                                                  |\n\
 -------------+----------------------------------------------------------------+\n\
  DESCRIPTION | This option is used to dump partitions, bootheader and SSIT    |\n\
              | slave PDIs as binary files.                                    |\n\
@@ -187,8 +187,11 @@ dual_qspi_mode
              | The files are dumped from the PDI mentioned with <filename>    |\n\
 ------------------------------------------------------------------------------|\n\
  ARGUMENTS   | boot_files : Dumps all boot files(Boot header, PLM and PMC CDO)|\n\
-             | plm        : Dumps the plm partition                           |\n\
-             | pmc_cdo    : Dumps pmc_cdo partition                           |\n\
+             |              (versal)                                          |\n\
+             | plm        : Dumps the plm partition (versal)                  |\n\
+             | pmc_cdo    : Dumps pmc_cdo partition (versal)                  |\n\
+             | ac_keys    : Dumps PPK and SPK authentication keys as          |\n\
+             |              ppk.pem and spk.pem (zynqmp)                     |\n\
              |                                                                |\n\
              | Note : When no arguments are specifed, all the partitions are  |\n\
              |        dumped.                                                 |\n\
@@ -198,17 +201,20 @@ dual_qspi_mode
              | dumped along with the PDI                                      |\n\
 ------------------------------------------------------------------------------|\n\
  ARGUMENTS   | bh         : Dumps the Boot Header                             |\n\
-             | slave_pdis : Dumps slave PDIs for SSIT devices                 |\n\
+             | slave_pdis : Dumps slave PDIs for SSIT devices (versal)        |\n\
 -------------+----------------------------------------------------------------+\n\
  USAGE       | 1. bootgen -arch versal -dump test.pdi                         |\n\
              | 2. bootgen -arch versal -dump test.pdi boot_files              |\n\
              | 3. bootgen -arch versal -image test.bif -w on -o               |\n\
              |                          test.pdi -dump slave_pdis             |\n\
+             | 4. bootgen -arch zynqmp -dump boot.bin ac_keys                 |\n\
 -------------+----------------------------------------------------------------+\n\
  EXPLANATION | 1. The partitions in the PDI are dumped as binary files.       |\n\
              | 2. Dumps all boot files - Boot header, PLM and PMC CDO, as     |\n\
              |    binary files.                                               |\n\
              | 3. Slave PDIs for SSIT devices are dumped as binary files.     |\n\
+             | 4. Dumps PPK and SPK from the authentication certificate as    |\n\
+             |    ppk.pem and spk.pem.                                        |\n\
 -------------+----------------------------------------------------------------+\n"
 
 /******************************************************************************
@@ -218,7 +224,7 @@ dump_dir
 -------------+----------------------------------------------------------------+\n\
  OPTION      | dump_dir                                                       |\n\
 -------------+----------------------------------------------------------------+\n\
- SUPPORTED   | versal                                                         |\n\
+ SUPPORTED   | versal, zynqmp                                                  |\n\
 -------------+----------------------------------------------------------------+\n\
  DESCRIPTION | This option is used with dump option to dump partitions in the |\n\
              | directory specified here.                                      |\n\
@@ -226,6 +232,7 @@ dump_dir
  SYNOPSIS    | -dump_dir <path>                                               |\n\
 -------------+----------------------------------------------------------------+\n\
  USAGE       | bootgen -arch versal -dump <pdi> -dump_dir <path>              |\n\
+             | bootgen -arch zynqmp -dump boot.bin ac_keys -dump_dir <path>   |\n\
 -------------+----------------------------------------------------------------+\n\
  EXPLANATION | The partitions in the PDI are dumped as binary files in the    |\n\
              | dump directory.                                                |\n\

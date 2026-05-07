@@ -94,6 +94,7 @@
     boot_files              return tok::DUMP_BOOT_FILES;
     slave_pdis              return tok::DUMP_SLAVE_PDIS;
     puf_pdi                 return tok::DUMP_PUF_PDI;
+    ac_keys                 return tok::DUMP_AC_KEYS;
 
 \-dump_dir                  return tok::_DUMP_DIR;
 \-legacy                    return tok::_LEGACY;

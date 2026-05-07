@@ -71,6 +71,7 @@ public:
     void DisplayPhtAttributes(uint32_t value);
     void DisplayBootVectors(void);
     void DumpPartitions(uint8_t* buffer, uint32_t length, std::string name);
+    void DumpACKeysAsPem();
 
     void VerifyAuthentication(bool);
     void VerifyEncryption(std::string nkyFile);
