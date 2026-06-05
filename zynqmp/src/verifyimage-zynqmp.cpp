@@ -414,6 +414,7 @@ void ZynqMpReadImage::VerifyEncryption(std::string nkyFile)
 
     AesGcmEncryptionContext aesGcm;
     bool allVerified = true;
+    bool foundEncrypted = false;
     int partIdx = 0;
 
     for (std::list<ZynqMpPartitionHeaderTableStructure*>::iterator it = pHTs.begin(); it != pHTs.end(); it++, partIdx++)
@@ -425,6 +426,7 @@ void ZynqMpReadImage::VerifyEncryption(std::string nkyFile)
             continue;
         }
 
+        foundEncrypted = true;
         Separator();
         LOG_MSG("Verifying encryption of partition %d", partIdx);
 
@@ -536,7 +538,11 @@ void ZynqMpReadImage::VerifyEncryption(std::string nkyFile)
     fclose(binFile);
     Separator();
 
-    if (allVerified)
+    if (!foundEncrypted)
+    {
+        LOG_ERROR("No encrypted partitions found in bootimage %s", binFilename.c_str());
+    }
+    else if (allVerified)
     {
         LOG_MSG("Encryption is verified on bootimage %s", binFilename.c_str());
     }
