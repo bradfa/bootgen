@@ -558,13 +558,15 @@ void ZynqMpReadImage::DisplayBootVectors(void)
 /*******************************************************************************/
 void ZynqMpReadImage::DisplayBhAttributes(uint32_t value)
 {
-    std::string val, val1;
+    std::string val, val1, optKeyStr, pufModeStr;
+    std::string empty = "";
 
-    switch ((value >> AUTH_ONLY_BIT_SHIFT) & OPT_KEY_BIT_MASK)
+    switch ((value >> OPT_KEY_BIT_SHIFT) & OPT_KEY_BIT_MASK)
     {
-    case 3: val = "[true]";         break;
-    default: val = "[false]";       break;
+    case 3: optKeyStr = "[true]";   break;
+    default: optKeyStr = "[false]"; break;
     }
+    DisplayAttributes("opt_key ", optKeyStr, empty, empty);
 
     switch ((value >> AUTH_ONLY_BIT_SHIFT) & AUTH_ONLY_BIT_MASK)
     {
@@ -594,11 +596,11 @@ void ZynqMpReadImage::DisplayBhAttributes(uint32_t value)
     }
     DisplayAttributes("checksum ", val1, "core ", val);
 
-    switch ((value >> AUTH_HASH_BIT_SHIFT) & AUTH_HASH_BIT_MASK)
+    switch ((value >> BH_PUF_MODE_BIT_SHIFT) & BH_PUF_MODE_BIT_MASK)
     {
-    case 2: val = "[puf-12k]";      break;
-    case 3: val = "[puf-4k]";       break;
-    default: val = "[invalid]";     break;
+    case 0: pufModeStr = "[puf-12k]";  break;
+    case 3: pufModeStr = "[puf-4k]";   break;
+    default: pufModeStr = "[invalid]"; break;
     }
 
     switch ((value >> BH_RSA_BIT_SHIFT) & BH_RSA_BIT_MASK)
@@ -608,7 +610,7 @@ void ZynqMpReadImage::DisplayBhAttributes(uint32_t value)
     }
     val1 = val;
 
-    DisplayAttributes("bh_auth ", val1, "puf_mode ", val);
+    DisplayAttributes("bh_auth ", val1, "puf_mode ", pufModeStr);
 }
 
 /*******************************************************************************/
